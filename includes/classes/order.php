@@ -755,16 +755,16 @@ class order extends base
                     if (isset($this->billing['zone_id']) && $this->billing['zone_id'] == (int)zen_config('STORE_ZONE')) {
                         $address_book_id = $billToAddressId;
                     } else {
-                        $address_book_id = ($this->content_type === 'virtual' ? $billToAddressId : $shipToAddressId);
+                        $address_book_id = ($this->content_type === 'virtual' ? $billToAddressId : -1);
                     }
             }
-            $tax_address_query = "SELECT ab.entry_country_id, ab.entry_zone_id
-                                  FROM " . TABLE_ADDRESS_BOOK . " ab
-                                  LEFT JOIN " . TABLE_ZONES . " z ON (ab.entry_zone_id = z.zone_id)
-                                  WHERE ab.customers_id = " . (int)$_SESSION['customer_id'] . "
-                                  AND ab.address_book_id = " . $address_book_id;
+            if ($address_book_id !== -1) {
+                $tax_address_query = "SELECT ab.entry_country_id, ab.entry_zone_id
+                                      FROM " . TABLE_ADDRESS_BOOK . " ab
+                                      LEFT JOIN " . TABLE_ZONES . " z ON (ab.entry_zone_id = z.zone_id)
+                                      WHERE ab.customers_id = " . (int)$_SESSION['customer_id'] . "
+                                      AND ab.address_book_id = " . $address_book_id;
 
-            if ($tax_address_query !== '') {
                 $tax_address = $db->Execute($tax_address_query);
                 if ($tax_address->RecordCount() > 0) {
                     $taxCountryId = $tax_address->fields['entry_country_id'];
