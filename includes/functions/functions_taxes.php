@@ -186,7 +186,7 @@ function zen_get_multiple_tax_rates($class_id, $country_id = -1, $zone_id = -1, 
 
     $rates_array = [];
 
-    if ($country_id == -1 && $zone_id == -1) {
+    if ($country_id === -1 && $zone_id === -1 && STORE_PRODUCT_TAX_BASIS !== 'Store') {
         if (zen_is_logged_in()) {
             $country_id = $_SESSION['customer_country_id'];
             $zone_id = $_SESSION['customer_zone_id'];
@@ -268,7 +268,7 @@ function zen_add_tax($price, $tax_percentage = 0, $force = false)
  * @return float|int
  * @since ZC v1.0.3
  */
-function zen_calculate_tax($price, $tax_percentage = 1)
+function zen_calculate_tax($price, $tax_percentage = 1): int|float
 {
     return $price * $tax_percentage / 100;
 }
@@ -321,7 +321,7 @@ function zen_display_tax_value($value, $padding = null)
  * @return float
  * @since ZC v1.0.3
  */
-function zen_get_tax_rate_from_desc(string $tax_desc)
+function zen_get_tax_rate_from_desc(string $tax_desc): float
 {
     global $db;
     $tax_rate = 0.00;
