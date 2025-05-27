@@ -148,7 +148,7 @@ class statsSalesReportGraph
                     $this->startDate = $this->globalStartDate;
                 }
                 // size to the number of weeks in this month till endDate
-                $this->size = (int)ceil((($this->endDate - $this->startDate + 1) / (60 * 60 * 24)) / 7);
+                $this->size = (int)ceil((($this->endDate - $this->startDate) / (60 * 60 * 24)) / 7);
                 for ($i = 0; $i < $this->size; $i++) {
                     $this->startDates[$i] = $this->mktime(0, 0, 0, date('m', $this->startDate), (int)date('d', $this->startDate) +  $i * 7, date('Y', $this->startDate));
                     $this->endDates[$i] = $this->mktime(0, 0, 0, date('m', $this->startDate), (int)date('d', $this->startDate) + ($i + 1) * 7, date('Y', $this->startDate));
@@ -200,7 +200,7 @@ class statsSalesReportGraph
                 break;
         }
 
-        if (in_array($this->mode, [self::HOURLY_VIEW, self::DAILY_VIEW, self::WEEKLY_VIEW], true)) {
+        if (in_array($this->mode, [self::HOURLY_VIEW, self::DAILY_VIEW], true)) {
             // set previous to start - diff
             $tmpDiff = $this->endDate - $this->startDate;
             if ($this->size === 0) {
@@ -216,9 +216,6 @@ class statsSalesReportGraph
                     break;
                 case self::DAILY_VIEW:
                     $tmp1 = 7 * 24 * 60 * 60;
-                    break;
-                case self::WEEKLY_VIEW:
-                    $tmp1 = 30 * 24 * 60 * 60;
                     break;
             }
             $tmp = ceil($tmpDiff / $tmp1);
@@ -257,6 +254,29 @@ class statsSalesReportGraph
             $tmpStart = $this->mktime(0, 0, 0, 1, 1, $year);
             $tmpEnd = $this->mktime(0, 0, 0, 12, 1, $year);
             if (date('Y', $tmpEnd) <= date('Y')) {
+                $this->next = "report=" . $this->mode . "&startDate=" . $tmpStart . "&endDate=" . $tmpEnd;
+            }
+        } elseif ($this->mode === self::WEEKLY_VIEW) {
+            if ($this->startDate === $this->globalStartDate) {
+                $dayInMonth = $this->startDate;
+            } else {
+                $dayInMonth = $this->startDate + (8 * 24 * 60 * 60); // The first day of the first week of the month can be in previous month. Adding 8 days to be sure to extract the correct month from this timestamp (could be between 7 and 21).
+            }
+            // compute previous link
+            $firstDay = $this->mktime(0, 0, 0, date('m', $dayInMonth) - 1, 1, (int)date('Y', $dayInMonth));
+            $tmpStart = $this->mktime(0, 0, 0, date('m', $firstDay), 1 - date('w', $firstDay), date('Y', $firstDay));
+            $lastDay = $this->mktime(0, 0, 0, date('m', $firstDay), date('t', $firstDay), date('Y', $firstDay));
+            $tmpEnd = $this->mktime(0, 0, 0, date('m', $lastDay), date('d', $lastDay) + 6 - date('w', $lastDay), date('Y', $lastDay));
+            if ($tmpStart >= $this->globalStartDate) {
+                $this->previous = "report=" . $this->mode . "&startDate=" . $tmpStart . "&endDate=" . $tmpEnd;
+            }
+
+            // compute next link
+            $firstDay = $this->mktime(0, 0, 0, date('m', $dayInMonth) + 1, 1, (int)date('Y', $dayInMonth));
+            $tmpStart = $this->mktime(0, 0, 0, date('m', $firstDay), 1 - date('w', $firstDay), date('Y', $firstDay));
+            $lastDay = $this->mktime(0, 0, 0, date('m', $firstDay), date('t', $firstDay), date('Y', $firstDay));
+            $tmpEnd = ($lastDay > $this->mktime(0, 0, 0, date('m'), date('d'), date('Y'))) ? $this->mktime(0, 0, 0, date('m'), date('d') + 6 - date('w'), date('Y')) : $this->mktime(0, 0, 0, date('m', $lastDay), date('d', $lastDay) + 6 - date('w', $lastDay), date('Y', $lastDay));
+            if ($this->endDate < $this->mktime(0, 0, 0, date('m'), date('d'), date('Y'))) {
                 $this->next = "report=" . $this->mode . "&startDate=" . $tmpStart . "&endDate=" . $tmpEnd;
             }
         }
