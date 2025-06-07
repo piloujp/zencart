@@ -80,6 +80,13 @@ DELETE FROM configuration WHERE configuration_key = 'SESSION_CHECK_SSL_SESSION_I
 
 DELETE FROM admin_pages WHERE page_key = 'pageRegistration';
 
+DELETE FROM configuration WHERE configuration_key IN ('MODULE_ORDER_TOTAL_GROUP_PRICING_INC_TAX', 'MODULE_ORDER_TOTAL_GROUP_PRICING_CALC_TAX', 'MODULE_ORDER_TOTAL_GROUP_PRICING_TAX_CLASS', 'MODULE_ORDER_TOTAL_GV_INC_TAX', 'MODULE_ORDER_TOTAL_GV_TAX_CLASS', 'MODULE_ORDER_TOTAL_GV_CREDIT_TAX', 'MODULE_ORDER_TOTAL_COUPON_TAX_CLASS', 'MODULE_ORDER_TOTAL_COUPON_INC_TAX');
+# Update ot modules configuration
+UPDATE configuration SET configuration_description = 'GV amount is applied on subtotal tax included -> tax_incl (default), if applied on subtotal without tax -> tax_excl', set_function = 'zen_cfg_select_option(array(\'tax_incl\', \'tax_excl\'),' WHERE configuration_key = 'MODULE_ORDER_TOTAL_GV_CALC_TAX';
+UPDATE configuration SET configuration_description = 'Discount coupon amount is applied on subtotal tax included -> tax_incl (default), if applied on subtotal without tax -> tax_excl', set_function = 'zen_cfg_select_option(array(\'tax_incl\', \'tax_excl\'),' WHERE configuration_key = 'MODULE_ORDER_TOTAL_COUPON_CALC_TAX';
+UPDATE configuration SET configuration_value = '980' WHERE configuration_key = 'MODULE_ORDER_TOTAL_TAX_SORT_ORDER';
+UPDATE configuration SET configuration_value = '800' WHERE configuration_key = 'MODULE_ORDER_TOTAL_GV_SORT_ORDER';
+
 #PROGRESS_FEEDBACK:!TEXT=Creating new table tax_rates_description...
 # Table structure for table 'tax_rates_description'
 CREATE TABLE IF NOT EXISTS tax_rates_description (

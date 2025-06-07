@@ -144,7 +144,7 @@ class LowOrderFeeTest extends zcInProcessFeatureTestCaseStore
         $confirmation->assertSee('2.50');
         $confirmation->assertSee('3.05');
         $confirmation->assertSee('5.00');
-        $confirmation->assertSee('&#8209;$50.54');
+        $confirmation->assertSee('&#8209;$47.49');
         $confirmation->assertSee('0.00');
 
         $this->switchLowOrderFee('off');
@@ -256,7 +256,7 @@ class LowOrderFeeTest extends zcInProcessFeatureTestCaseStore
         $confirmation->assertSee('&#8209;$4.00');
         $confirmation->assertSee('2.52');
         $confirmation->assertSee('5.00');
-        $confirmation->assertSee('&#8209;$46.01');
+        $confirmation->assertSee('&#8209;$43.49');
 
         $this->setCustomerGroupDiscount($profile['email_address'], 0);
         $this->switchLowOrderFee('off');
