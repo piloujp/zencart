@@ -123,15 +123,31 @@ class ot_loworderfee
                     $low_order_fee = zen_config('MODULE_ORDER_TOTAL_LOWORDERFEE_FEE');
                 }
 
-                $tax_amount = zen_calculate_tax($low_order_fee, $tax);
-                $order->info['tax'] += $tax_amount;
-                if (!isset($order->info['tax_groups'][$tax_description])) {
-                    $order->info['tax_groups'][$tax_description] = 0;
-                }
-                $order->info['tax_groups'][$tax_description] += $tax_amount;
-                $order->info['total'] += $low_order_fee + $tax_amount;
-                if (zen_config('DISPLAY_PRICE_WITH_TAX') === 'true') {
-                    $low_order_fee += $tax_amount;
+                if (zen_config('MODULE_ORDER_TOTAL_LOWORDERFEE_TAX_CLASS') != '0') {
+                    $tax_address = zen_get_tax_locations();
+                    $tax = zen_get_tax_rate(zen_config('MODULE_ORDER_TOTAL_LOWORDERFEE_TAX_CLASS'), $tax_address['country_id'], $tax_address['zone_id']);
+                    $tax_multiple = zen_get_multiple_tax_rates(zen_config('MODULE_ORDER_TOTAL_LOWORDERFEE_TAX_CLASS'), $tax_address['country_id'], $tax_address['zone_id']);
+                    $tax_description = zen_get_tax_description(zen_config('MODULE_ORDER_TOTAL_LOWORDERFEE_TAX_CLASS'), $tax_address['country_id'], $tax_address['zone_id'], true);
+
+                    $low_order_tax = zen_calculate_tax($low_order_fee, $tax);
+                    $order->info['tax'] += $low_order_tax;
+                    foreach ($tax_description as $key => $value) {
+                        if (!isset($order->info['tax_groups'][$value])) {
+                            $order->info['tax_groups'][$value] = 0;
+                        }
+                        if (!isset($order->info['tax_subtotals'][$value]['subtotal'])) {
+                            $order->info['tax_subtotals'][$value]['subtotal'] = 0;
+                        }
+                        $loworder_tax_group_value = zen_calculate_tax($low_order_fee, $tax_multiple[$value]);
+                        $order->info['tax_groups'][$value] += $loworder_tax_group_value;
+                        $order->info['tax_subtotals'][$value]['subtotal'] += $low_order_fee;
+                    }
+                    $order->info['total'] += $low_order_fee + $low_order_tax;
+                    if (zen_config('DISPLAY_PRICE_WITH_TAX') === 'true') {
+                        $low_order_fee += $low_order_tax;
+                    }
+                } else {
+                    $order->info['total'] += $low_order_fee;
                 }
 
                 $this->output[] = [

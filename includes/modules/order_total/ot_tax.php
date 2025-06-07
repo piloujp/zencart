@@ -67,6 +67,7 @@ class ot_tax
 
             $taxDescription = '';
             $taxValue = 0;
+            $order->info['tax_sort_order'] = $this->sort_order;
             if (zen_config('STORE_TAX_DISPLAY_STATUS') === '1') {
                 $taxAddress = zen_get_tax_locations();
                 $result = zen_get_all_tax_descriptions($taxAddress['country_id'], $taxAddress['zone_id']);
@@ -135,7 +136,7 @@ class ot_tax
         {
             global $db;
             $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('This module is installed', 'MODULE_ORDER_TOTAL_TAX_STATUS', 'true', '', '6', '1','zen_cfg_select_option(array(\'true\'), ', now())");
-            $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_ORDER_TOTAL_TAX_SORT_ORDER', '300', 'Sort order of display.', '6', '2', now())");
+            $db->Execute("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Sort Order', 'MODULE_ORDER_TOTAL_TAX_SORT_ORDER', '980', 'Sort order of display.', '6', '2', now())");
         }
 
         /**

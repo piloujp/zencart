@@ -458,7 +458,7 @@ class GiftVoucherRedeemTest extends zcInProcessFeatureTestCaseStore
             ->assertOk();
 
         $lookupSection = self::locateElementInPageSource('id="checkoutOrderTotals"', $response->content);
-        $this->assertStringContainsString('SEK6,4259', $lookupSection);
+        $this->assertStringContainsString('SEK6,4256', $lookupSection);
         $this->setConfiguration('DEFAULT_CURRENCY', 'USD');
     }
 
