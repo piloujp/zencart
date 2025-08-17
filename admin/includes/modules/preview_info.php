@@ -167,7 +167,7 @@ foreach ($languages as $next_lang) {
 <?php
     if ($p_date_available > date('Y-m-d')) {
 ?>
-        <div class="row"><?= sprintf(TEXT_PRODUCT_DATE_AVAILABLE, zen_date_long($p_date_available)) ?></div>
+        <div class="row"><?= sprintf(TEXT_PRODUCT_DATE_AVAILABLE, zen_date_long($p_date_available) . ' ' . substr($p_date_available, 10)) ?></div>
 <?php
     } else {
 ?>
