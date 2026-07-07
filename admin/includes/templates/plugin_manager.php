@@ -10,6 +10,7 @@
  */
 
 use Zencart\PluginSupport\PluginStatus;
+use Zencart\PluginManager\PluginManager;
 
 ?>
 <div class="container-fluid">
@@ -73,6 +74,10 @@ use Zencart\PluginSupport\PluginStatus;
                                 } else { ?>
                                     <tr class="dataTableRow" onclick="document.location.href='<?= $formatter->getNotSelectedRowLink($tableData) ?>'">
                                     <?php
+                                }
+                                $updateAvailable = ($pluginManager->isUpgradeAvailable($tableData ['unique_key']['value'], $tableData ['version']['value']) !== 0);
+                                if ($i === PluginStatus::ENABLED && $updateAvailable === true) {
+                                    $tableData['status']['class'] = str_replace('status-enabled', 'status-enabled-blink', $tableData['status']['class']);
                                 }
                                 foreach ($tableData as $column) { ?>
                                     <td <?= empty($column['class']) ? '' : 'class="' . $column['class'] . '"' ?>><?= $column['value'] ?></td>

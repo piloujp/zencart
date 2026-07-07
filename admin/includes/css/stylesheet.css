@@ -1240,3 +1240,11 @@ tbody>tr>td.align-bottom {
 .status-color-code-input #cp-picker {
     height:34px; width:100%; padding:0; border:none; cursor:pointer;
 }
+
+.status-enabled-blink {
+  animation: statusBlink 2s ease-in-out infinite;
+}
+@keyframes statusBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.1; }
+}
