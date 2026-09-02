@@ -14,6 +14,7 @@ use Zencart\PluginManager\PluginManager;
 use Zencart\PluginSupport\InstallerFactory;
 use Zencart\PluginSupport\PluginStatus;
 use Zencart\ResourceLoaders;
+use \ZipArchive;
 
 /**
  * @since ZC v1.5.8
@@ -31,6 +32,22 @@ class PluginManagerController extends BaseController
     {
         $this->pluginManager = $pluginManager;
         $this->installerFactory = $installerFactory;
+    }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    public function lastLocalVersion(): false|string
+    {
+        return $this->pluginManager->getLatestLocalVersion($this->currentFieldValue('unique_key'));
+    }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    public function latestAvailable(): false|array
+    {
+        return $this->pluginManager->isNewDownloadAvailable($this->currentFieldValue('zc_contrib_id'), $this->lastLocalVersion());
     }
 
     /**
@@ -111,9 +128,15 @@ class PluginManagerController extends BaseController
             );
         }
 
-        if ($available = $this->pluginManager->isNewDownloadAvailable($this->currentFieldValue('zc_contrib_id'), $version)) {
+        if ($this->latestAvailable()) {
             $this->setBoxContent(
-                sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $available['latest_plugin_version'], $available['id'])
+                sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'], $this->latestAvailable()['id'])
+            );
+            $this->setBoxContent(
+                '<a href="' . zen_href_link(
+                    FILENAME_PLUGIN_MANAGER,
+                    $this->pageLink() . '&' . $this->colKeyLink() . '&action=download'
+                ) . '" class="btn btn-primary" role="button">' . TEXT_DOWNLOAD_AVAILABLE . '</a>'
             );
         } elseif (!empty($this->currentFieldValue('zc_contrib_id'))) {
             $this->setBoxContent(
@@ -341,6 +364,139 @@ class PluginManagerController extends BaseController
         $this->notify('NOTIFY_PLUGINMANAGER_DO_UNINSTALL', ['plugin_key' => $this->currentFieldValue('unique_key'), 'version' => $this->request->input('version')]);
 
         $this->messageStack->add_session(TEXT_UNINSTALL_SUCCESS, 'success');
+        zen_redirect(
+            zen_href_link(
+                FILENAME_PLUGIN_MANAGER,
+                $this->pageLink() . '&' . $this->colKeyLink()
+            )
+        );
+    }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    protected function processActionDownload(): void
+    {
+        if (!$this->latestAvailable()) {
+            zen_redirect(
+                zen_href_link(
+                    FILENAME_PLUGIN_MANAGER,
+                    $this->pageLink() . '&' . $this->colKeyLink()
+                )
+            );
+        }
+        $this->setBoxHeader('<h4>' . zen_lookup_admin_menu_language_override('plugin_name', $this->currentFieldValue('unique_key'), $this->currentFieldValue('name')) . '</h4>');
+        $this->setBoxForm(zen_draw_form('plugindownload', FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink() . '&action=doDownload', 'post', 'class="form-horizontal"'));
+        $this->setBoxContent(sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'], $this->latestAvailable()['id']));
+
+        $this->setBoxContent(
+            '<br><button type="submit" class="btn btn-primary">'
+            . TEXT_DOWNLOAD . '</button> <a href="' . zen_href_link(
+                FILENAME_PLUGIN_MANAGER,
+                $this->pageLink() . '&' . $this->colKeyLink()
+            ) . '" class="btn btn-default" role="button">' . IMAGE_CANCEL . '</a>'
+        );
+    }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    protected function processActionDoDownload(): void
+    {
+        $version = $this->latestAvailable()['latest_plugin_version'];
+        if ($version === false) {
+            zen_redirect(zen_href_link(FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink()));
+        }
+
+        $zipFileName = preg_replace('/\s+/', '_', strtolower(trim($this->currentFieldValue('name')))) . '-' . ltrim($version, 'v');
+        $remoteZipUrl  = 'https://www.zen-cart.com/plugins/' . preg_replace('/\s+/', '-', trim($this->currentFieldValue('name'))) . '/download'; // URL of the ZIP file !!! NOT AVAILABLE YET !!!!
+        $localZipFile  = DIR_FS_DOWNLOAD . $this->currentFieldValue('unique_key') . '.zip'; // Where to save the temporary ZIP
+        $targetFolder  = $zipFileName . '/zc_plugins/' . $this->currentFieldValue('unique_key') . '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP (must end with /)
+        $extractToDir  = DIR_FS_CATALOG . 'zc_plugins/' . $this->currentFieldValue('unique_key') . '/';   // Folder where the extracted files are to be saved
+
+        $fp = fopen($localZipFile, 'w+');
+        if (!$fp) {
+            $this->messageStack->add_session(sprintf(TEXT_ZIP_TEMP_ERROR, $localZipFile), 'error');
+            zen_redirect(
+                zen_href_link(
+                    FILENAME_PLUGIN_MANAGER,
+                    $this->pageLink() . '&' . $this->colKeyLink()
+                )
+            );
+        }
+
+        $ch = curl_init($remoteZipUrl);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+        curl_setopt($ch, CURLOPT_FILE, $fp);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Follow redirects if any
+        curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            fclose($fp);
+            unlink($localZipFile); // Clean up
+            $this->messageStack->add_session(sprintf(TEXT_ZIP_CURL_ERROR, curl_errno($ch)), 'error');
+            zen_redirect(
+                zen_href_link(
+                    FILENAME_PLUGIN_MANAGER,
+                    $this->pageLink() . '&' . $this->colKeyLink()
+                )
+            );
+        }
+        fclose($fp);
+
+        $zip = new ZipArchive();
+        if ($zip->open($localZipFile) === TRUE) {
+            // Loop through every file inside the archive
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $filename = $zip->getNameIndex($i);
+
+                // Check if the file path inside the ZIP begins with the target folder
+                if (strpos($filename, $targetFolder) !== 0) {
+                    continue;
+                }
+
+                // Keep only the partial path
+                $zipPath = explode('/', $filename, 4);
+                $partialPath = $zipPath[3];
+                if (empty($partialPath ) || substr($partialPath, -1) === '/') {
+                    continue;
+                }
+
+                $fullOutputPath = $extractToDir . $partialPath;
+                $directoryPath = dirname($fullOutputPath);
+                if (!is_dir($directoryPath)) {
+                    mkdir($directoryPath, 0777, true);
+                }
+
+                // Extract the file data stream
+                $inputStream = $zip->getStream($zip->getNameIndex($i));
+                $outputStream = fopen($fullOutputPath, 'w');
+
+                if ($inputStream && $outputStream) {
+                    stream_copy_to_stream($inputStream, $outputStream);
+                    fclose($inputStream);
+                    fclose($outputStream);
+                }
+            }
+            $zip->close();
+        } else {
+            unlink($localZipFile);
+            $this->messageStack->add_session(TEXT_ZIP_DOWNLOAD_ERROR, 'error');
+            zen_redirect(
+                zen_href_link(
+                    FILENAME_PLUGIN_MANAGER,
+                    $this->pageLink() . '&' . $this->colKeyLink()
+                )
+            );
+        }
+
+        if (file_exists($localZipFile)) {
+            unlink($localZipFile);
+        }
+
+        $this->notify('NOTIFY_PLUGINMANAGER_DO_DOWNLOAD', ['plugin_key' => $this->currentFieldValue('unique_key'), 'version' => $version, 'old_version' => $this->currentFieldValue('version')]);
+
+        $this->messageStack->add_session(TEXT_DOWNLOAD_SUCCESS, 'success');
         zen_redirect(
             zen_href_link(
                 FILENAME_PLUGIN_MANAGER,
