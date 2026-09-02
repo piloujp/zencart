@@ -65,11 +65,25 @@ $tableDefinition = [
                     string $colName,
                     array $_columnInfo
                 ) use ($pluginManager): string {
+                    if ($pluginManager->hasPluginVersionToDownload(
+                        (string)$tableRow['unique_key'],
+                        (string)$tableRow['version']
+                    )) {
+                        return zen_icon('status-download', TEXT_DOWNLOAD_AVAILABLE);
+                    }
+
                     if ($pluginManager->isUpgradeAvailable(
                         (string)$tableRow['unique_key'],
                         (string)$tableRow['version']
                     )) {
                         return zen_icon('status-upgrade', TEXT_UPGRADE_AVAILABLE);
+                    }
+
+                    if ($pluginManager->hasPluginVersionsToClean(
+                        (string)$tableRow['unique_key'],
+                        (string)$tableRow['version']
+                    )) {
+                        return zen_icon('status-clean', TEXT_CLEANUP);
                     }
 
                     return match ($tableRow[$colName]) {
