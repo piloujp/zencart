@@ -211,6 +211,9 @@ $iconMap = [
     'fa-solid fa-circle fa-stack-1x txt-linked',
     'fa-regular fa-circle fa-stack-1x txt-black'
   ],
+  'status-clean' => 'fa-broom fa-2x plugin-alert',
+  'status-upgrade' => 'fa-arrow-up-from-bracket fa-2x plugin-alert',
+  'status-download' => 'fa-download fa-2x plugin-alert',
   'status-red' => [
     'fa-solid fa-circle fa-stack-1x txt-status-off',
     'fa-regular fa-circle fa-stack-1x txt-black'

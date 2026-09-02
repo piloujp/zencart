@@ -403,4 +403,45 @@ class PluginManager
             }
         }
     }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    public function hasPluginVersionToDownload(?string $uniqueKey): bool
+    {
+        zen_set_time_limit(120);
+        if (empty($uniqueKey)) {
+            return false;
+        }
+
+        $locVersions = $this->getPluginVersions($uniqueKey);
+        $latestLocalVersion = 'v0.0.0';
+        foreach ($locVersions as $locVersion) {
+            if (version_compare($locVersion['version'], $latestLocalVersion, '<=')) {
+                continue;
+            } else {
+                $latestLocalVersion = $locVersion['version'];
+            }
+        }
+
+        $latestLocalVersion = preg_replace('/[^0-9\.]/', '', $latestLocalVersion);
+        $pluginOnlineId = $this->getPluginOnlineId($uniqueKey);
+
+        return $this->isNewDownloadAvailable($pluginOnlineId, $latestLocalVersion) ? true : false;
+    }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    public function getPluginOnlineId(?string $uniqueKey): string
+    {
+        if (empty($uniqueKey)) {
+            return 0;
+        }
+
+        $plugins = $this->getPluginsFromDb();
+        $pluginId = $plugins[$uniqueKey]['zc_contrib_id'];
+        
+        return (string) $pluginId;
+    }
 }

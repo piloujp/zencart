@@ -111,7 +111,7 @@ class PluginManagerController extends BaseController
             );
         }
 
-        if ($available = $this->pluginManager->isNewDownloadAvailable($this->currentFieldValue('zc_contrib_id'), $version)) {
+        if ($available = $this->pluginManager->isNewDownloadAvailable($this->currentFieldValue('zc_contrib_id'), preg_replace('/[^0-9\.]/', '', $version))) {
             $this->setBoxContent(
                 sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $available['latest_plugin_version'], $available['id'])
             );
