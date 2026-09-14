@@ -481,7 +481,9 @@ class PluginManagerController extends BaseController
             $zip->close();
         } else {
             unlink($localZipFile);
-            $this->messageStack->add_session(TEXT_ZIP_DOWNLOAD_ERROR, 'error');
+            $errorNb = $zip->open($localZipFile);
+            $errorMessage = ($errorNb > 0 && $errorNb < 24) ? constant('TEXT_ZIP_ERROR_MESSAGE_' . (string)$errorNb) : TEXT_ZIP_DOWNLOAD_ERROR;
+            $this->messageStack->add_session($errorMessage, 'error');
             zen_redirect(
                 zen_href_link(
                     FILENAME_PLUGIN_MANAGER,
