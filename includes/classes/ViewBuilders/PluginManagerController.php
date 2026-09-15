@@ -408,32 +408,23 @@ class PluginManagerController extends BaseController
             zen_redirect(zen_href_link(FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink()));
         }
 
-        $zipFileName = preg_replace('/\s+/', '_', strtolower(trim($this->currentFieldValue('name')))) . '-' . ltrim($version, 'v');
-        $remoteZipUrl  = 'https://www.zen-cart.com/plugins/' . preg_replace('/\s+/', '-', trim($this->currentFieldValue('name'))) . '/download'; // URL of the ZIP file !!! NOT AVAILABLE YET !!!!
+        $remoteZipUrl  = 'https://www.zen-cart.com/plugins/' . basename($this->latestAvailable()['link']) . '/download'; // URL of the ZIP file
         $localZipFile  = DIR_FS_DOWNLOAD . $this->currentFieldValue('unique_key') . '.zip'; // Where to save the temporary ZIP
-        $targetFolder  = $zipFileName . '/zc_plugins/' . $this->currentFieldValue('unique_key') . '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP (must end with /)
+        $targetFolder  = preg_replace('/\s+/', '_', strtolower(trim($this->currentFieldValue('name')))) . '-' . ltrim($version, 'v') . '/zc_plugins/' . $this->currentFieldValue('unique_key') . '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP (must end with /)
         $extractToDir  = DIR_FS_CATALOG . 'zc_plugins/' . $this->currentFieldValue('unique_key') . '/';   // Folder where the extracted files are to be saved
 
-        $fp = fopen($localZipFile, 'w+');
-        if (!$fp) {
-            $this->messageStack->add_session(sprintf(TEXT_ZIP_TEMP_ERROR, $localZipFile), 'error');
-            zen_redirect(
-                zen_href_link(
-                    FILENAME_PLUGIN_MANAGER,
-                    $this->pageLink() . '&' . $this->colKeyLink()
-                )
-            );
-        }
-
-        $ch = curl_init($remoteZipUrl);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 300);
-        curl_setopt($ch, CURLOPT_FILE, $fp);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Follow redirects if any
-        curl_exec($ch);
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $remoteZipUrl);
+        curl_setopt($ch, CURLOPT_VERBOSE, 1);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 2);
+        $response = curl_exec($ch);
 
         if (curl_errno($ch)) {
-            fclose($fp);
-            unlink($localZipFile); // Clean up
             $this->messageStack->add_session(sprintf(TEXT_ZIP_CURL_ERROR, curl_errno($ch)), 'error');
             zen_redirect(
                 zen_href_link(
@@ -442,48 +433,56 @@ class PluginManagerController extends BaseController
                 )
             );
         }
-        fclose($fp);
+        if (file_put_contents($localZipFile, $response) !== false) {
+            $zip = new ZipArchive();
+            if ($zip->open($localZipFile) === TRUE) {
+                // Loop through every file inside the archive
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
 
-        $zip = new ZipArchive();
-        if ($zip->open($localZipFile) === TRUE) {
-            // Loop through every file inside the archive
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $filename = $zip->getNameIndex($i);
+                    // Check if the file path inside the ZIP begins with the target folder
+                    if (strpos($filename, $targetFolder) !== 0) {
+                        continue;
+                    }
 
-                // Check if the file path inside the ZIP begins with the target folder
-                if (strpos($filename, $targetFolder) !== 0) {
-                    continue;
+                    // Keep only the partial path
+                    $zipPath = explode('/', $filename, 4);
+                    $partialPath = $zipPath[3];
+                    if (empty($partialPath ) || substr($partialPath, -1) === '/') {
+                        continue;
+                    }
+
+                    $fullOutputPath = $extractToDir . $partialPath;
+                    $directoryPath = dirname($fullOutputPath);
+                    if (!is_dir($directoryPath)) {
+                        mkdir($directoryPath, 0777, true);
+                    }
+
+                    // Extract the file data stream
+                    $inputStream = $zip->getStream($zip->getNameIndex($i));
+                    $outputStream = fopen($fullOutputPath, 'w');
+
+                    if ($inputStream && $outputStream) {
+                        stream_copy_to_stream($inputStream, $outputStream);
+                        fclose($inputStream);
+                        fclose($outputStream);
+                    }
                 }
-
-                // Keep only the partial path
-                $zipPath = explode('/', $filename, 4);
-                $partialPath = $zipPath[3];
-                if (empty($partialPath ) || substr($partialPath, -1) === '/') {
-                    continue;
-                }
-
-                $fullOutputPath = $extractToDir . $partialPath;
-                $directoryPath = dirname($fullOutputPath);
-                if (!is_dir($directoryPath)) {
-                    mkdir($directoryPath, 0777, true);
-                }
-
-                // Extract the file data stream
-                $inputStream = $zip->getStream($zip->getNameIndex($i));
-                $outputStream = fopen($fullOutputPath, 'w');
-
-                if ($inputStream && $outputStream) {
-                    stream_copy_to_stream($inputStream, $outputStream);
-                    fclose($inputStream);
-                    fclose($outputStream);
-                }
+                $zip->close();
+            } else {
+                unlink($localZipFile);
+                $errorNb = $zip->open($localZipFile);
+                $errorMessage = ($errorNb > 0 && $errorNb < 24) ? constant('TEXT_ZIP_ERROR_MESSAGE_' . (string)$errorNb) : TEXT_ZIP_DOWNLOAD_ERROR;
+                $this->messageStack->add_session($errorMessage, 'error');
+                zen_redirect(
+                    zen_href_link(
+                        FILENAME_PLUGIN_MANAGER,
+                        $this->pageLink() . '&' . $this->colKeyLink()
+                    )
+                );
             }
-            $zip->close();
         } else {
-            unlink($localZipFile);
-            $errorNb = $zip->open($localZipFile);
-            $errorMessage = ($errorNb > 0 && $errorNb < 24) ? constant('TEXT_ZIP_ERROR_MESSAGE_' . (string)$errorNb) : TEXT_ZIP_DOWNLOAD_ERROR;
-            $this->messageStack->add_session($errorMessage, 'error');
+            $this->messageStack->add_session(TEXT_ZIP_TEMP_ERROR, 'error');
             zen_redirect(
                 zen_href_link(
                     FILENAME_PLUGIN_MANAGER,
