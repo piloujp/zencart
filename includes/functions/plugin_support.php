@@ -83,7 +83,7 @@ function plugin_version_check_for_updates(mixed $plugin_file_id = 0, string $ver
         return false;
     }
 
-    if (strcmp($data[0]['latest_plugin_version'], $version_string_to_compare) > 0) {
+    if (version_compare(ltrim($data[0]['latest_plugin_version'], 'vV'), ltrim($version_string_to_compare, 'vV')) > 0) {
         $new_version_available = true;
     }
     // check whether present ZC version is compatible with the latest available plugin version
