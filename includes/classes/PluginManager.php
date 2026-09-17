@@ -19,6 +19,8 @@ use Zencart\PluginSupport\PluginStatus;
  */
 class PluginManager
 {
+    private $pluginsDownloadAvailable;
+    
     public function __construct(
         private PluginControlRepository $pluginControl,
         private PluginControlVersionRepository $pluginControlVersion
@@ -31,6 +33,7 @@ class PluginManager
     {
         $pluginsFromFilesystem = $this->getPluginsFromFileSystem();
         $this->updateDbPlugins($pluginsFromFilesystem);
+        $this->pluginsDownloadAvailable = $this->getPluginsAfterCheckingForNewVersionsOnline();
     }
 
     /**
@@ -97,6 +100,14 @@ class PluginManager
     }
 
     /**
+     * @since ZC v3.0.0
+     */
+    public function getPluginsDownloadAvailable(): bool|array
+    {
+        return $this->pluginsDownloadAvailable;
+    }
+
+    /**
      * @since ZC v1.5.7
      */
     public function getPluginsAfterCheckingForNewVersionsOnline(): bool|array
@@ -124,26 +135,23 @@ class PluginManager
             return false;
         }
 
-        // make sure $results is the actual array we want to iterate over, and not a sub-array
-        if (is_array($results) && !isset($results[0]['id']) && isset($results[0][0]['id'])) {
-            $results = $results[0];
-        }
-
-        if (!isset($results[0]['id'])) {
+        if (!isset($results[0][0]['id'])) {
             return false; // @TODO or return original $plugins array?
         }
 
         $present_zc_version = 'v' . preg_replace('/[^0-9.]/', '', zen_get_zcversion());
 
         foreach ($results as $result) {
-            $unique_key = $pluginsById[$result['id']]['unique_key'];
+            $unique_key = $pluginsById[$result[0]['id']]['unique_key'];
+            $localVersion = $this->getLatestLocalVersion($unique_key);
 
-            if (version_compare($pluginsById[$result['id']]['version'], $result['latest_plugin_version'], '<')) {
+            if (version_compare($localVersion, $result[0]['latest_plugin_version'], '<')) {
                 $plugins[$unique_key]['new_online_version_exists'] = true;
-                $plugins[$unique_key]['latest_plugin_version'] = $result['latest_plugin_version'];
-                $plugins[$unique_key]['zcversions'] = $result['zcversions'];
+                $plugins[$unique_key]['latest_plugin_version'] = $result[0]['latest_plugin_version'];
+                $plugins[$unique_key]['zcversions'] = $result[0]['zcversions'];
+                $plugins[$unique_key]['link'] = $result[0]['link'];
 
-                if (in_array($present_zc_version, $result['zcversions'], $strict = false)) {
+                if (in_array($present_zc_version, $result[0]['zcversions'], $strict = false)) {
                     $plugins[$unique_key]['new_plugin_exists_for_this_zc_version'] = true;
                 }
             }
@@ -166,7 +174,7 @@ class PluginManager
 
         if (null === $data || isset($data['error'])) {
             if (LOG_PLUGIN_VERSIONCHECK_FAILURES) {
-                error_log('CURL error checking plugin versions (in batch): ' . print_r(!empty($data) ? $data : 'null', true));
+                error_log(TEXT_CURL_ERROR_BATCH . print_r(!empty($data) ? $data : 'null', true));
             }
             return false;
         }
@@ -176,9 +184,22 @@ class PluginManager
                 $data = json_decode($data, true);
             } catch (\Exception $exception) {
                 if (LOG_PLUGIN_VERSIONCHECK_FAILURES) {
-                    error_log('CURL error checking plugin versions (in batch): ' . print_r(!empty($data) ? $data : 'null', true));
+                    error_log(TEXT_CURL_ERROR_BATCH . print_r(!empty($data) ? $data : 'null', true));
                 }
                 return false;
+            }
+        } else {
+            foreach ($data as $key => $value) {
+                if (!is_array($value)) {
+                    try {
+                        $data[$key] = json_decode($value, true);
+                    } catch (\Exception $exception) {
+                        if (LOG_PLUGIN_VERSIONCHECK_FAILURES) {
+                            error_log(TEXT_CURL_ERROR_BATCH . print_r(!empty($data) ? $data : 'null', true));
+                        }
+                        return false;
+                    }
+                }
             }
         }
 
@@ -406,5 +427,27 @@ class PluginManager
                 }
             }
         }
+    }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    public function getLatestLocalVersion(?string $uniqueKey): string
+    {
+        if (empty($uniqueKey)) {
+            return false;
+        }
+
+        $locVersions = $this->getPluginVersions($uniqueKey);
+        $latestLocalVersion = 'v0.0.0';
+        foreach ($locVersions as $locVersion) {
+            if (version_compare($locVersion['version'], $latestLocalVersion, '<=')) {
+                continue;
+            } else {
+                $latestLocalVersion = $locVersion['version'];
+            }
+        }
+
+        return $latestLocalVersion;
     }
 }
