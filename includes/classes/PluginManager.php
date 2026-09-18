@@ -143,6 +143,7 @@ class PluginManager
 
         foreach ($results as $result) {
             $unique_key = $pluginsById[$result[0]['id']]['unique_key'];
+            if ((int)$result[0]['encapsulated'] !== 1) continue; // Not encapsulated
             $localVersion = $this->getLatestLocalVersion($unique_key);
 
             if (version_compare($localVersion, $result[0]['latest_plugin_version'], '<')) {

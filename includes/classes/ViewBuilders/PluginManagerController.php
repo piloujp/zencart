@@ -47,7 +47,7 @@ class PluginManagerController extends BaseController
      */
     public function latestAvailable(): false|array
     {
-        if (isset($this->pluginManager->getPluginsDownloadAvailable()[$this->currentFieldValue('unique_key')]['new_plugin_exists_for_this_zc_version'])) {
+        if (isset($this->pluginManager->getPluginsDownloadAvailable()[$this->currentFieldValue('unique_key')]['latest_plugin_version'])) {
             return $this->pluginManager->getPluginsDownloadAvailable()[$this->currentFieldValue('unique_key')];            
         }
         return false;
@@ -132,9 +132,15 @@ class PluginManagerController extends BaseController
         }
 
         if ($this->latestAvailable()) {
-            $this->setBoxContent(
-                sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'], $this->latestAvailable()['zc_contrib_id'])
-            );
+            if (isset($this->latestAvailable()['new_plugin_exists_for_this_zc_version'])) {
+                $this->setBoxContent(
+                    sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'])
+                );
+            } else {
+                $this->setBoxContent(
+                    sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_POSSIBLY_AVAILABLE, $this->latestAvailable()['latest_plugin_version'], $this->latestAvailable()['zc_contrib_id'])
+                );
+            }
             $this->setBoxContent(
                 '<a href="' . zen_href_link(
                     FILENAME_PLUGIN_MANAGER,
@@ -390,7 +396,7 @@ class PluginManagerController extends BaseController
         }
         $this->setBoxHeader('<h4>' . zen_lookup_admin_menu_language_override('plugin_name', $this->currentFieldValue('unique_key'), $this->currentFieldValue('name')) . '</h4>');
         $this->setBoxForm(zen_draw_form('plugindownload', FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink() . '&action=doDownload', 'post', 'class="form-horizontal"'));
-        $this->setBoxContent(sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'], $this->latestAvailable()['zc_contrib_id']));
+        $this->setBoxContent(sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version']));
 
         $this->setBoxContent(
             '<br><button type="submit" class="btn btn-primary">'
