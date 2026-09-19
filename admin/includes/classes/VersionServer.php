@@ -140,6 +140,39 @@ class VersionServer
     }
 
     /**
+     * @param string $baseName A string of the file name/directory of the requested plugin
+     * @return string json string, or false when no valid name was supplied
+     * @since ZC v3.0.0
+     */
+    public function getPluginFile(string $baseName): bool|string
+    {
+        if (empty($baseName)) {
+            return false;
+        }
+
+        $remoteZipUrl  = 'https://www.zen-cart.com/plugins/' . $baseName . '/download'; // URL of the ZIP file
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $remoteZipUrl);
+        curl_setopt($ch, CURLOPT_VERBOSE, 1);
+        curl_setopt($ch, CURLOPT_HEADER, false);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_MAXREDIRS, 2);
+        $response = curl_exec($ch);
+        $error = curl_error($ch);
+        $errno = curl_errno($ch);
+        $http_code = curl_getinfo($ch, \CURLINFO_HTTP_CODE);
+
+        if ($errno > 0 || $response === false || $http_code > 299) {
+            return $this->formatCurlError($errno, $error);
+        }
+        return $response;
+    }
+
+    /**
      * This method checks the major and minor version numbers to determine if the project is current.
      *
      * Since v2.0.0, Zen Cart follows semantic versioning.

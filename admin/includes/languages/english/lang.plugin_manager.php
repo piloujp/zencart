@@ -61,7 +61,7 @@ $define = [
     'TEXT_NOT_INSTALLED' => 'Not Installed',
     'TEXT_PLUGIN_AUTHOR' => '<strong>Author:</strong> %s',
     'TEXT_PLUGIN_DOWNLOAD_PAGE' => '<a target="_blank" rel="noreferrer" href="https://www.zen-cart.com/downloads.php?do=file&id=%s">Plugin Page</a>',
-    'TEXT_ZIP_CURL_ERROR' => 'Error during zip file download: %s',
+    'TEXT_ZIP_CURL_ERROR' => 'Error during zip file download: Invalid URL',
     'TEXT_ZIP_DOWNLOAD_ERROR' => 'Unknown error with the ZIP file.',
     'TEXT_ZIP_ERROR_MESSAGE_1' => 'Error: Multi-disk zip archives not supported',
     'TEXT_ZIP_ERROR_MESSAGE_2' => 'Error: Renaming temporary file failed',
