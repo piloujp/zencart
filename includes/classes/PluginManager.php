@@ -451,4 +451,22 @@ class PluginManager
 
         return $latestLocalVersion;
     }
+
+    /**
+     * @since ZC v3.0.0
+     */
+    public function getPluginsVersionsOnDisk(string $uniqueKey): string
+    {
+        if (empty($uniqueKey)) {
+            return '';
+        }
+        $results = $this->pluginControlVersion->getByUniqueKey($uniqueKey);
+        $versions = [];
+        foreach ($results as $result) {
+            $versions[] = $result['version'];
+        }
+        ksort($versions);
+        $versions = implode(', ', $versions);
+        return $versions;
+    }
 }

@@ -93,6 +93,7 @@ $define = [
     'TEXT_UPGRADE_AVAILABLE' => 'Upgrade Available',
     'TEXT_UPGRADE_SUCCESS' => 'Plugin upgraded successfully',
     'TEXT_VERSION_INSTALLED' => '<strong>Version Installed:</strong> %s',
+    'TEXT_VERSION_ON_DISK' => '<strong>Version(s) available for install:</strong> %s',
 
     'WARNING_NONENCAPSULATED_REMOVAL' => '<b>Note:</b> Installing this plugin will result in files provided by a non-encapsulated version (if present) being <b>permanently</b> removed!',
     'WARNING_TEMPLATE_IS_ACTIVE' => 'This plugin contains the template currently selected by the <a href="%1$s">%2$s</a> tool. Uninstalling the plugin prior to selecting a different template will have unwanted consequences!',

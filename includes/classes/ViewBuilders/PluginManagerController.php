@@ -111,8 +111,10 @@ class PluginManagerController extends BaseController
         $status = (int)$this->currentFieldValue('status');
 
         $this->setBoxHeader('<h4>' . zen_lookup_admin_menu_language_override('plugin_name', $unique_key, $this->currentFieldValue('name')) . '</h4>');
-        if ($status === PluginStatus::ENABLED) {
+        if ($status === PluginStatus::ENABLED || $status === PluginStatus::DISABLED) {
             $this->setBoxContent('<br>' . sprintf(TEXT_VERSION_INSTALLED, $version) . '<br>');
+        } else {
+            $this->setBoxContent('<br>' . sprintf(TEXT_VERSION_ON_DISK, $this->pluginManager->getPluginsVersionsOnDisk($unique_key)) . '<br>');
         }
         $this->setBoxContent('<br>' . TEXT_INFO_DESCRIPTION . '<br>' . zen_lookup_admin_menu_language_override('plugin_description', $unique_key, $this->currentFieldValue('description')));
 
