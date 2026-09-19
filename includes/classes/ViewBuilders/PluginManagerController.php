@@ -419,24 +419,24 @@ class PluginManagerController extends BaseController
             zen_redirect(zen_href_link(FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink()));
         }
 
-        $remoteZipUrl  = 'https://www.zen-cart.com/plugins/' . basename($this->latestAvailable()['link']) . '/download'; // URL of the ZIP file
+        $remoteZipFolder  = basename($this->latestAvailable()['link']);
         $localZipFile  = DIR_FS_DOWNLOAD . $this->currentFieldValue('unique_key') . '.zip'; // Where to save the temporary ZIP
         $targetFolder  = preg_replace('/\s+/', '_', strtolower(trim($this->currentFieldValue('name')))) . '-' . ltrim($version, 'v') . '/zc_plugins/' . $this->currentFieldValue('unique_key') . '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP (must end with /)
         $extractToDir  = DIR_FS_CATALOG . 'zc_plugins/' . $this->currentFieldValue('unique_key') . '/';   // Folder where the extracted files are to be saved
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $remoteZipUrl);
-        curl_setopt($ch, CURLOPT_VERBOSE, 1);
-        curl_setopt($ch, CURLOPT_HEADER, false);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 10);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-        curl_setopt($ch, CURLOPT_MAXREDIRS, 2);
-        $response = curl_exec($ch);
+        $versionServer = new \VersionServer();
+        $response = $versionServer->getPluginFile($remoteZipFolder);
 
-        if (curl_errno($ch)) {
-            $this->messageStack->add_session(sprintf(TEXT_ZIP_CURL_ERROR, curl_errno($ch)), 'error');
+        if ($response === false) {
+            $this->messageStack->add_session(TEXT_ZIP_CURL_ERROR, 'error');
+            zen_redirect(
+                zen_href_link(
+                    FILENAME_PLUGIN_MANAGER,
+                    $this->pageLink() . '&' . $this->colKeyLink()
+                )
+            );
+        } elseif (isset(json_decode($response)['error'])) {
+            $this->messageStack->add_session(json_decode($response)['error'], 'error');
             zen_redirect(
                 zen_href_link(
                     FILENAME_PLUGIN_MANAGER,
