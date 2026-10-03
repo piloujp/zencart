@@ -440,14 +440,15 @@ class PluginManagerController extends BaseController
      */
     protected function processActionDoDownload(): void
     {
-        $version = $this->latestAvailable()['latest_plugin_version'];
-        if ($version === false) {
+        if ($this->latestAvailable()['latest_plugin_version'] === false) {
+            $this->messageStack->add_session('NO VERSION', 'error');
             zen_redirect(zen_href_link(FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink()));
         }
+        $version = $this->latestAvailable()['latest_plugin_version'];
 
         $remoteZipFolder  = basename($this->latestAvailable()['link']);
         $localZipFile  = DIR_FS_DOWNLOAD . $this->currentFieldValue('unique_key') . '.zip'; // Where to save the temporary ZIP
-        $targetFolder  = preg_replace('/\s+/', '_', strtolower(trim($this->currentFieldValue('name')))) . '-' . ltrim($version, 'v') . '/zc_plugins/' . $this->currentFieldValue('unique_key') . '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP (must end with /)
+        $targetFolder  = '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP (must end with /)
         $extractToDir  = DIR_FS_CATALOG . 'zc_plugins/' . $this->currentFieldValue('unique_key') . '/';   // Folder where the extracted files are to be saved
 
         $versionServer = new \VersionServer();
@@ -478,14 +479,20 @@ class PluginManagerController extends BaseController
                     $filename = $zip->getNameIndex($i);
 
                     // Check if the file path inside the ZIP begins with the target folder
-                    if (strpos($filename, $targetFolder) !== 0) {
+                    if (strpos($filename, $targetFolder) < 0) {
                         continue;
                     }
 
                     // Keep only the partial path
                     $zipPath = explode('/', $filename, 4);
-                    $partialPath = $zipPath[3];
-                    if (empty($partialPath ) || substr($partialPath, -1) === '/') {
+                    if (!empty($zipPath[3])) {
+                        if (str_starts_with($zipPath[3], $version)) {
+                            $partialPath = $zipPath[3];
+                        } else {
+                            $partialPath = $zipPath[2] . '/' . $zipPath[3];
+                        }
+                    }
+                    if (empty($partialPath) || substr($partialPath, -1) === '/') {
                         continue;
                     }
 
@@ -496,7 +503,7 @@ class PluginManagerController extends BaseController
                     }
 
                     // Extract the file data stream
-                    $inputStream = $zip->getStream($zip->getNameIndex($i));
+                    $inputStream = $zip->getStream($filename);
                     $outputStream = fopen($fullOutputPath, 'w');
 
                     if ($inputStream && $outputStream) {
