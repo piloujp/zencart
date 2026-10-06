@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * @copyright Copyright 2003-2026 Zen Cart Development Team
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: lat9 2026 Mar 17 Modified in v2.2.1 $
+ * @version $Id: pilou2/pilouJP 2026 Oct 07 Modified in v3.0.0-dev $
  */
 
 namespace Zencart\ViewBuilders;
@@ -440,7 +440,7 @@ class PluginManagerController extends BaseController
      */
     protected function processActionDoDownload(): void
     {
-        if ($this->latestAvailable()['latest_plugin_version'] === false) {
+        if ($this->latestAvailable() === false) {
             $this->messageStack->add_session('NO VERSION', 'error');
             zen_redirect(zen_href_link(FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink()));
         }
@@ -539,13 +539,20 @@ class PluginManagerController extends BaseController
             unlink($localZipFile);
         }
 
-        $this->notify('NOTIFY_PLUGINMANAGER_DO_DOWNLOAD', ['plugin_key' => $this->currentFieldValue('unique_key'), 'version' => $version, 'old_version' => $this->currentFieldValue('version')]);
+        if (empty($this->currentFieldValue('version'))) {
+            $oldversion = '';
+            $getPara = '';
+        } else {
+            $oldversion = $this->currentFieldValue('version');
+            $getPara = '&action=upgrade';
+        }
+        $this->notify('NOTIFY_PLUGINMANAGER_DO_DOWNLOAD', ['plugin_key' => $this->currentFieldValue('unique_key'), 'version' => $version, 'old_version' => $oldversion]);
 
         $this->messageStack->add_session(sprintf(TEXT_DOWNLOAD_SUCCESS, $version), 'success');
         zen_redirect(
             zen_href_link(
                 FILENAME_PLUGIN_MANAGER,
-                $this->pageLink() . '&' . $this->colKeyLink() . '&action=upgrade'
+                $this->pageLink() . '&' . $this->colKeyLink() . $getPara
             )
         );
     }
