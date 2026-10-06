@@ -56,7 +56,7 @@ $define = [
     'TEXT_INSTALLED_DISABLED' => 'Installed (Disabled)',
     'TEXT_INSTALLED_ENABLED' => 'Installed (Enabled)',
     'TEXT_LABEL_STATUS' => 'Status: ',
-    'TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE' => 'A new version %1$s is available to download from the <a target="_blank" rel="noreferrer" href="https://www.zen-cart.com/downloads.php?do=file&id=%2$s">support forum</a>',
+    'TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE' => 'A new version %1$s is available to download from the <a target="_blank" rel="noreferrer" href="https://www.zen-cart.com/downloads.php?do=file&id=%2$s">Zen Cart site</a>',
     'TEXT_NEW_PLUGIN_DOWNLOAD_POSSIBLY_AVAILABLE' => 'A new version %1$s is available for download, but the Zen Cart version compatibility could not be confirmed.<br>Please check on <a target="_blank" rel="noreferrer" href="https://www.zen-cart.com/downloads.php?do=file&id=%2$s">plugin page</a>!<br><br>Download anyway:',
     'TEXT_NOT_INSTALLED' => 'Not Installed',
     'TEXT_PLUGIN_AUTHOR' => '<strong>Author:</strong> %s',
