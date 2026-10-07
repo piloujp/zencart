@@ -21,7 +21,7 @@ use Zencart\PluginSupport\PluginStatus;
 class PluginManager
 {
     private $pluginsDownloadAvailable;
-    
+
     public function __construct(
         private PluginControlRepository $pluginControl,
         private PluginControlVersionRepository $pluginControlVersion
