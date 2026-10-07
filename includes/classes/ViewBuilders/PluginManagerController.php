@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * @copyright Copyright 2003-2026 Zen Cart Development Team
  * @license http://www.zen-cart.com/license/2_0.txt GNU Public License V2.0
- * @version $Id: lat9 2026 Mar 17 Modified in v2.2.1 $
+ * @version $Id: pilou2/pilouJP 2026 Oct 07 Modified in v3.0.0-dev $
  */
 
 namespace Zencart\ViewBuilders;
@@ -489,6 +489,20 @@ class PluginManagerController extends BaseController
                 )
             );
         }
+        $langues = zen_get_languages();
+        $pluginDir = DIR_FS_CATALOG . 'zc_plugins/' . $this->currentFieldValue('unique_key') . '/';
+        foreach ($langues as $lang) {
+            if ($lang['code'] !== 'en') {
+                foreach (['admin/includes', 'catalog/includes', 'Installer'] as $direct) {
+                    $directory_source = $pluginDir . $this->currentFieldValue('version') . '/' . $direct . '/languages/' . $lang['directory'];
+                    $directory_target = $pluginDir . $this->request->input('version') . '/' . $direct . '/languages/' . $lang['directory'];
+                    if (is_dir($directory_source) && !is_dir($directory_target)) {
+                        recursive_copy($directory_source, $directory_target);
+                    }
+                }
+            }
+        }
+
         $this->notify('NOTIFY_PLUGINMANAGER_DO_UPGRADE', ['plugin_key' => $this->currentFieldValue('unique_key'), 'version' => $this->request->input('version'), 'old_version' => $this->currentFieldValue('version')]);
 
         $this->messageStack->add_session(TEXT_UPGRADE_SUCCESS, 'success');
@@ -714,5 +728,24 @@ class PluginManagerController extends BaseController
 
         $this->messageStack->add_session(TEXT_DISABLE_SUCCESS, 'success');
         zen_redirect(zen_href_link(FILENAME_PLUGIN_MANAGER, $this->pageLink() . '&' . $this->colKeyLink()));
+    }
+
+    /**
+     * recursively copy a directory and its content.
+     */
+    protected function recursive_copy(string $src, string $dst): void
+    {
+        $dir = opendir($src);
+        @mkdir($dst); // Create destination
+        while (false !== ($file = readdir($dir))) {
+            if (($file != '.') && ($file != '..')) {
+                if (is_dir($src . '/' . $file)) {
+                    recursive_copy($src . '/' . $file, $dst . '/' . $file);
+                } else {
+                    copy($src . '/' . $file, $dst . '/' . $file);
+                }
+            }
+        }
+        closedir($dir);
     }
 }
