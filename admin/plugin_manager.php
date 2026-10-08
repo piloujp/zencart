@@ -66,7 +66,7 @@ $tableDefinition = [
                     array $_columnInfo
                 ) use ($pluginManager): string {
                     $newPluginAvailable = $pluginManager->getPluginsDownloadAvailable();
-                    if ($newPluginAvailable !== false && isset($newPluginAvailable[(string)$tableRow['unique_key']]['latest_plugin_version'])) { // use 'new_plugin_exists_for_this_zc_version' for strict ZC version compatibility check
+                    if ($newPluginAvailable !== false && isset($newPluginAvailable[(string)$tableRow['unique_key']]['latest_plugin_version'])) { // use 'new_plugin_exists_for_this_zc_version' instead of 'latest_plugin_version' for strict ZC version compatibility check
                         return zen_icon('status-download', TEXT_DOWNLOAD_AVAILABLE);
                     }
 
