@@ -104,10 +104,10 @@ class PluginManagerController extends BaseController
         $status = (int)$this->currentFieldValue('status');
 
         $this->setBoxHeader('<h4>' . zen_lookup_admin_menu_language_override('plugin_name', $unique_key, $this->currentFieldValue('name')) . '</h4>');
-        if ($status === PluginStatus::ENABLED || $status === PluginStatus::DISABLED) {
+        if ($status === PluginStatus::ENABLED || $status === PluginStatus::DISABLED) { // check status for installed plugins, enabled or disabled
             $this->setBoxContent('<br>' . sprintf(TEXT_VERSION_INSTALLED, $version));
         } else {
-            $this->setBoxContent('<br>' . sprintf(TEXT_VERSION_ON_DISK, $this->pluginManager->getPluginsVersionsOnDisk($unique_key)));
+            $this->setBoxContent('<br>' . sprintf(TEXT_VERSION_ON_DISK, $this->pluginManager->getPluginsVersionsOnDisk($unique_key))); // List available versions on disk for plugins not installed
         }
         $this->setBoxContent(TEXT_INFO_DESCRIPTION . '<br>' . zen_lookup_admin_menu_language_override('plugin_description', $unique_key, $this->currentFieldValue('description')));
 
@@ -127,11 +127,11 @@ class PluginManagerController extends BaseController
         }
 
         if ($this->latestAvailable()) {
-            if (isset($this->latestAvailable()['new_plugin_exists_for_this_zc_version'])) {
+            if (isset($this->latestAvailable()['new_plugin_exists_for_this_zc_version'])) { // new plugin version available for download and compatible with this ZC version
                 $this->setBoxContent(
                     sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'])
                 );
-            } else {
+            } else { // new plugin version available for download but ZC version compatibility could not checked or is not listed as compatible
                 $this->setBoxContent(
                     sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_POSSIBLY_AVAILABLE, $this->latestAvailable()['latest_plugin_version'], $this->latestAvailable()['link'])
                 );
@@ -446,9 +446,9 @@ class PluginManagerController extends BaseController
         }
         $version = $this->latestAvailable()['latest_plugin_version'];
 
-        $remoteZipFolder  = basename($this->latestAvailable()['link']);
+        $remoteZipFolder  = basename($this->latestAvailable()['link']); // Extract plugin base name used as folder name on ZC server
         $localZipFile  = DIR_FS_DOWNLOAD . $this->currentFieldValue('unique_key') . '.zip'; // Where to save the temporary ZIP
-        $targetFolder  = '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP (must end with /)
+        $targetFolder  = '/' . $version . '/'; // The folder to be extracted, INSIDE the ZIP
         $extractToDir  = DIR_FS_CATALOG . 'zc_plugins/' . $this->currentFieldValue('unique_key') . '/';   // Folder where the extracted files are to be saved
 
         $versionServer = new \VersionServer();
@@ -478,17 +478,17 @@ class PluginManagerController extends BaseController
                 for ($i = 0; $i < $zip->numFiles; $i++) {
                     $filename = $zip->getNameIndex($i);
 
-                    // Check if the file path inside the ZIP begins with the target folder
+                    // Check if the file path inside the ZIP contains the target folder, skip if not
                     if (strpos($filename, $targetFolder) < 0) {
                         continue;
                     }
 
                     // Keep only the partial path
-                    $zipPath = explode('/', $filename, 4);
+                    $zipPath = explode('/', $filename, 4); // plugins zip structure generally like "zc_plugins/PluginUniqueKey/Version/files&subfolders"
                     if (!empty($zipPath[3])) {
                         if (str_starts_with($zipPath[3], $version)) {
                             $partialPath = $zipPath[3];
-                        } else {
+                        } else { // Some zip structures start directly with zc_plugins folder content like this: "PluginUniqueKey/Version/files&subfolders"
                             $partialPath = $zipPath[2] . '/' . $zipPath[3];
                         }
                     }
@@ -514,9 +514,9 @@ class PluginManagerController extends BaseController
                 }
                 $zip->close();
             } else {
-                unlink($localZipFile);
                 $errorNb = $zip->open($localZipFile);
-                $errorMessage = ($errorNb > 0 && $errorNb < 24) ? constant('TEXT_ZIP_ERROR_MESSAGE_' . (string)$errorNb) : TEXT_ZIP_DOWNLOAD_ERROR;
+                $errorMessage = ($errorNb > 0 && $errorNb < 24) ? constant('TEXT_ZIP_ERROR_MESSAGE_' . (string)$errorNb) : TEXT_ZIP_DOWNLOAD_ERROR; // returns Zip library error message (nb from 1 to 23) or a generic error message
+                unlink($localZipFile);
                 $this->messageStack->add_session($errorMessage, 'error');
                 zen_redirect(
                     zen_href_link(
@@ -526,7 +526,7 @@ class PluginManagerController extends BaseController
                 );
             }
         } else {
-            $this->messageStack->add_session(TEXT_ZIP_TEMP_ERROR, 'error');
+            $this->messageStack->add_session(TEXT_ZIP_TEMP_ERROR, 'error'); // was not able to create the temporary zip file from download
             zen_redirect(
                 zen_href_link(
                     FILENAME_PLUGIN_MANAGER,
@@ -539,7 +539,7 @@ class PluginManagerController extends BaseController
             unlink($localZipFile);
         }
 
-        if (empty($this->currentFieldValue('version'))) {
+        if (empty($this->currentFieldValue('version'))) { // For plugins not installed
             $oldversion = '';
             $getPara = '';
         } else {
