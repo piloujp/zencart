@@ -129,7 +129,7 @@ class PluginManagerController extends BaseController
         if ($this->latestAvailable()) {
             if (isset($this->latestAvailable()['new_plugin_exists_for_this_zc_version'])) { // new plugin version available for download and compatible with this ZC version
                 $this->setBoxContent(
-                    sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'])
+                    sprintf(TEXT_NEW_PLUGIN_DOWNLOAD_AVAILABLE, $this->latestAvailable()['latest_plugin_version'], $this->latestAvailable()['link'])
                 );
             } else { // new plugin version available for download but ZC version compatibility could not checked or is not listed as compatible
                 $this->setBoxContent(
