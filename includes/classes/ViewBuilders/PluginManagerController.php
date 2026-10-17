@@ -773,7 +773,12 @@ class PluginManagerController extends BaseController
         }
         $this->notify('NOTIFY_PLUGINMANAGER_DO_CLEANUP', ['plugin_key' => $this->currentFieldValue('unique_key'), 'version' => $this->request->input('version')]);
 
-        zen_redirect(zen_href_link(FILENAME_PLUGIN_MANAGER, $this->pageLink()));
+        zen_redirect(
+            zen_href_link(
+                FILENAME_PLUGIN_MANAGER,
+                $this->pageLink() . '&' . $this->colKeyLink()
+            )
+        );
     }
 
     /**
