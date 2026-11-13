@@ -465,7 +465,7 @@ class PluginManager
 
         $plugins = $this->getPluginsFromDb();
         $pluginId = $plugins[$uniqueKey]['zc_contrib_id'];
-        
+
         return (string) $pluginId;
     }
 }
